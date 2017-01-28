@@ -87,7 +87,7 @@ class RCOMObject : public IDispatch
                           if(def != R_NilValue)
                              setObject(def);
                        };
-  ~RCOMObject() {
+  virtual ~RCOMObject() {
                   m_cRef--;
                   if(m_cRef == 0) {
 		    destroy();
@@ -159,9 +159,7 @@ class RCOMEnvironmentObject : public RCOMObject
   RCOMEnvironmentObject(SEXP def) {
     SEXP f, e, val;
     int errorOccurred;
-#ifdef RDCOM_VERBOSE
-    errorLog("[RCOMEnvironment]\n");
-#endif
+
     f = GET_SLOT(def, Rf_install("generator"));
     PROTECT(e = allocVector(LANGSXP, 1));
     SETCAR(e, f);
@@ -170,9 +168,7 @@ class RCOMEnvironmentObject : public RCOMObject
 
     setObject(val);
     UNPROTECT(1);
-#ifdef RDCOM_VERBOSE
-    errorLog("[end RCOMEnvironment]\n");
-#endif
+
   };
 };
 

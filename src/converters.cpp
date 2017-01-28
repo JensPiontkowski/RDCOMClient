@@ -7,7 +7,7 @@
 extern "C" {
 #include "RUtils.h"
 #include <Rdefines.h>
-
+#include <R_ext/Print.h>
   SEXP R_getDynamicVariantValue(SEXP ref);
   SEXP R_setDynamicVariantValue(SEXP ref, SEXP value);
 }
@@ -42,12 +42,11 @@ char *
 FromBstr(BSTR str)
 {
   char *ptr = NULL;
-  DWORD len;
 
   if(!str)
     return(NULL);
 
-  len = wcslen(str);
+  int len = WideCharToMultiByte(CP_ACP, 0, str, -1, NULL, 0, NULL, NULL);
 
   if(len < 1)
     len = 0;
@@ -55,9 +54,7 @@ FromBstr(BSTR str)
   ptr = (char *) S_alloc(len+1, sizeof(char));
   ptr[len] = '\0';
   if(len > 0) {
-    DWORD ok = WideCharToMultiByte(CP_ACP, 0, str, len, ptr, len, NULL, NULL);
-    if(ok == 0) 
-      ptr = NULL;
+    WideCharToMultiByte(CP_ACP, 0, str, -1, ptr, len, NULL, NULL);
   }
 
   return(ptr);
@@ -362,7 +359,6 @@ SEXP
 R_convertDCOMObjectToR(VARIANT *var)
 {
   SEXP ans = R_NilValue;
-  HRESULT hr;
 
   VARTYPE type = V_VT(var);
 
@@ -372,17 +368,13 @@ R_convertDCOMObjectToR(VARIANT *var)
 
 
   if(V_ISARRAY(var)) {
-#if defined(RDCOM_VERBOSE) && RDCOM_VERBOSE
-  errorLog("Finishing convertDCOMObjectToR - convert array\n");
-#endif
+
     return(convertArrayToR(var));
   } else if(V_VT(var) == VT_DISPATCH || (V_ISBYREF(var) && ((V_VT(var) & (~ VT_BYREF)) == VT_DISPATCH)) ) {
     IDispatch *ptr;
     if(V_ISBYREF(var)) {
 
-#if defined(RDCOM_VERBOSE) && RDCOM_VERBOSE
-      errorLog("BYREF and DISPATCH in convertDCOMObjectToR\n");
-#endif
+
 
       IDispatch **tmp = V_DISPATCHREF(var);
       if(!tmp)
@@ -394,9 +386,7 @@ R_convertDCOMObjectToR(VARIANT *var)
     if(ptr) 
       ptr->AddRef();
     ans = R_createRCOMUnknownObject((void*) ptr, "COMIDispatch");
-#if defined(RDCOM_VERBOSE) && RDCOM_VERBOSE
-    errorLog("Finished convertDCOMObjectToR  COMIDispatch\n");
-#endif
+
     return(ans);
   }
 
@@ -412,9 +402,7 @@ R_convertDCOMObjectToR(VARIANT *var)
     if(rtype == VT_BSTR) {
         BSTR *tmp;
         const char *ptr = "";
-#if defined(RDCOM_VERBOSE) && RDCOM_VERBOSE
-	errorLog("BYREF and BSTR convertDCOMObjectToR  (scalar string)\n");
-#endif
+
         tmp = V_BSTRREF(var);
         if(tmp)
   	  ptr = FromBstr(*tmp);
@@ -438,7 +426,7 @@ R_convertDCOMObjectToR(VARIANT *var)
     case VT_UI2:
     case VT_UI4:
     case VT_UINT:
-      hr = VariantChangeType(var, var, 0, VT_I4);
+      VariantChangeType(var, var, 0, VT_I4);
       ans = R_scalarReal((double) V_I4(var));
       break;
 
@@ -446,14 +434,14 @@ R_convertDCOMObjectToR(VARIANT *var)
     case VT_I2:
     case VT_I4:
     case VT_INT:
-      hr = VariantChangeType(var, var, 0, VT_I4);
+      VariantChangeType(var, var, 0, VT_I4);
       ans = R_scalarInteger(V_I4(var));
       break;
 
     case VT_R4:
     case VT_R8:
     case VT_I8:
-      hr = VariantChangeType(var, var, 0, VT_R8);
+      VariantChangeType(var, var, 0, VT_R8);
       ans = R_scalarReal(V_R8(var));
       break;
 
@@ -461,7 +449,7 @@ R_convertDCOMObjectToR(VARIANT *var)
     case VT_DATE:
     case VT_HRESULT:
     case VT_DECIMAL:
-      hr = VariantChangeType(var, var, 0, VT_R8);
+      VariantChangeType(var, var, 0, VT_R8);
       ans = numberFromVariant(var, type);
       break;
 
@@ -481,12 +469,18 @@ R_convertDCOMObjectToR(VARIANT *var)
        ans = R_createRCOMUnknownObject((void**) ptr, "COMUnknown");
       }
        break;
+  case VT_ERROR:   // to get errors such as #NUM as NaN in R  
+      ans = R_scalarReal(R_NaN);
+      break;
+      
   case VT_EMPTY:
   case VT_NULL:
+   
   case VT_VOID:
     return(R_NilValue);
     break;
-
+ 
+	
 
 /*XXX Need to fill these in */
   case VT_RECORD:
@@ -498,7 +492,7 @@ R_convertDCOMObjectToR(VARIANT *var)
     /*  case LPSTR: */
   case VT_LPWSTR:
   case VT_PTR:
-  case VT_ERROR:
+
   case VT_VARIANT:
   case VT_CARRAY:
   case VT_USERDEFINED:
@@ -508,9 +502,7 @@ R_convertDCOMObjectToR(VARIANT *var)
     ans = createRVariantObject(var, V_VT(var));
   }
 
-#if defined(RDCOM_VERBOSE) && RDCOM_VERBOSE
-  errorLog("Finished convertDCOMObjectToR\n");
-#endif
+
 
   return(ans);
 }
@@ -561,7 +553,8 @@ createRDCOMArray(SEXP obj, VARIANT *var)
 
   HRESULT hr = SafeArrayAccessData(arr, (void**) &data);
   if(hr != S_OK) {
-    std::cerr <<"Problems accessing data" << std::endl;
+    //std::cerr <<"Problems accessing data" << std::endl;
+    REprintf("Problems accessing data\n");
     SafeArrayDestroy(arr);
     return(NULL);
   }
@@ -590,7 +583,8 @@ createRDCOMArray(SEXP obj, VARIANT *var)
       break;
 
     default:
-      std::cerr <<"Array case not handled yet for R type " << TYPEOF(obj) << std::endl;
+      //std::cerr <<"Array case not handled yet for R type " << TYPEOF(obj) << std::endl;
+      REprintf("Array case not handled yet for R type %d\n", TYPEOF(obj));
     break;
   }
 

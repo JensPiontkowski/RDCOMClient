@@ -343,8 +343,8 @@ SEXP R_createCOMErrorCodes();
 	#undef MAKE_HRESULT_ENTRY
 
 
-
-#define _countof(array) (sizeof(array)/sizeof(array[0]))
+// already defined in stdlih.h
+//#define _countof(array) (sizeof(array)/sizeof(array[0]))
 void GetScodeString(HRESULT hr, LPTSTR buf, int bufSize)
 {
 	// first ask the OS to give it to us..
@@ -368,7 +368,7 @@ void GetScodeString(HRESULT hr, LPTSTR buf, int bufSize)
 		}
 	}
 	// not found - make one up
-	sprintf(buf, ("OLE error 0x%08x"), hr);
+	sprintf(buf, ("OLE error 0x%08lu"), hr);
 }
 
 
@@ -406,7 +406,7 @@ checkErrorInfo(IUnknown *obj, HRESULT status, SEXP *serr)
   HRESULT hr;
   ISupportErrorInfo *info;
 
-  fprintf(stderr, "<checkErrorInfo> %X \n", status);
+  fprintf(stderr, "<checkErrorInfo> %lu \n", status);
 
   if(serr) 
     *serr = NULL;
