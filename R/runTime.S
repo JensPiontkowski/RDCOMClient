@@ -1,17 +1,27 @@
-#  This file is needed to run code that is generated 
+#  This file is needed to run code that is generated
 # by the generateInterface() function.  Perhaps
 # it should migrate to the RDCOMClient package.
 #
 
+utils::globalVariables(c(".x", "StrictMethodNameExpansion"))
+
+#' @export
+#' @rdname RDCOMClient
 setClass("CompiledCOMIDispatch", contains = "COMIDispatch")
 
+
+#' @export
+#' @rdname RDCOMClient
 setClass("CompiledCOMCoClass",
          representation(coclass = "character"),
-         contains = "CompiledCOMIDispatch")	
+         contains = "CompiledCOMIDispatch")
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("getItemClassName", "CompiledCOMCoClass", function(x) x@coclass[1]) #XXX first one for now.
 
-
+#' @export
+#' @rdname RDCOMClient
 setMethod("[[", c("CompiledCOMCoClass", "character"),
            function(x, i, j, ...) {
              x = as(x, x@coclass[1]) #XX first one
@@ -19,50 +29,63 @@ setMethod("[[", c("CompiledCOMCoClass", "character"),
            })
 
 #  x[["name"]]
+#' @export
+#' @rdname RDCOMClient
 setMethod("[[<-", c("CompiledCOMCoClass", "character"),
            function(x, i, j, ..., value) {
              orig = x
-             x = as(x, x@coclass[1]) 
+             x = as(x, x@coclass[1])
              x[[i]] <- value
              orig
            })
 
-setMethod("$", c("CompiledCOMCoClass"), 
+#' @export
+#' @rdname RDCOMClient
+setMethod("$", c("CompiledCOMCoClass"),
            function(x, name) {
              x = as(x, x@coclass)
 	     do.call("$", list(x, name))
            })
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("$<-", c("CompiledCOMCoClass", "character"),
            function(x, name, value) {
 	     do.call("$<-", list(as(x, x@coclass), name, value))
              x
-           })
+})
 
 
 #######################################################################################################
 
 # Return the names of the methods and properties.
 
-COMNames = 
+#' @export
+#' @rdname RDCOMClient
+COMNames =
  function(x) {
-               ids = createTypeVarName(x, 
+               ids = createTypeVarName(x,
                                        c("GetProperty", "SetProperty", "Methods"), quote = FALSE)
                pkg = attr(class(x), "package")
 	       env = if(pkg == ".GlobalEnv") globalenv() else getNamespace(pkg)
-               
+
                sort(as.character(unlist(sapply(mget(ids, env), names))))
             }
+
+#' @export
+#' @rdname RDCOMClient
 setMethod("names", "CompiledCOMIDispatch", COMNames)
 
 # Fetch the value of a property or return a function to invoke
 # the named method.
+#' @export
+#' @rdname RDCOMClient
 setMethod("$", "CompiledCOMIDispatch",
             function(x, name) {
 
-               # Do partial or complete matching depending on the value of 
+               # Do partial or complete matching depending on the value of
                # a variable the user can set named StrictMethodNameExpansion.
-             if(!exists("StrictMethodNameExpansion") || StrictMethodNameExpansion) 
+             if(!exists("StrictMethodNameExpansion") || StrictMethodNameExpansion)
                 m = match
              else
                 m = pmatch
@@ -72,7 +95,7 @@ setMethod("$", "CompiledCOMIDispatch",
              ids = createTypeVarName(x, c("GetProperty", "Methods"), quote = FALSE)
 
                # Fetch the property accessor functions.
-             pkg = attr(class(x), "package")	
+             pkg = attr(class(x), "package")
 	     env = if(pkg == ".GlobalEnv") globalenv() else getNamespace(pkg)
 
 	     GetProperty = get(ids[1], env, mode = "list")
@@ -80,7 +103,7 @@ setMethod("$", "CompiledCOMIDispatch",
 
                # See if there is an element in the property accessor
                # with that name.
-	     idx = m(name, names(GetProperty)) 
+	     idx = m(name, names(GetProperty))
 	     idx.methods = m(name, names(Methods))
 
                # No method and there is a property, then just return its value.
@@ -106,12 +129,12 @@ setMethod("$", "CompiledCOMIDispatch",
                 formals(f) = formals(property)
                 formals(f)[[".x"]] = x
                 return(f)
-             } else 
+             } else
                 stop(name, " is not a property or method for ", class(x))
 
-              # If we did find an entry, adapt it so it has access to 
-              # x in the future and return it.  Note that we have to 
-              # mess with the formals differently here since it may 
+              # If we did find an entry, adapt it so it has access to
+              # x in the future and return it.  Note that we have to
+              # mess with the formals differently here since it may
               # not be an empty list.
 #             f = Methods[[idx]]
 #             formals(f) = c(formals(f), ".x" = x)
@@ -121,9 +144,11 @@ setMethod("$", "CompiledCOMIDispatch",
 
 
 #  Fetch the value of a property. If the name identifies a method
-#  then get the function and if it has all the parameters have default 
-#  values, then invoke it. 
+#  then get the function and if it has all the parameters have default
+#  values, then invoke it.
 #  This is not vectorized.
+#' @export
+#' @rdname RDCOMClient
 setMethod("[[", c("CompiledCOMIDispatch", "character"),
             function(x, i, j, ...) {
 
@@ -131,8 +156,8 @@ setMethod("[[", c("CompiledCOMIDispatch", "character"),
                # properties and methods are called.
              ids = createTypeVarName(x, c("GetProperty", "Methods"), quote = FALSE)
 
-             pkg = attr(class(x), "package")	
-	     env = if(pkg == ".GlobalEnv") globalenv() else getNamespace(pkg)	
+             pkg = attr(class(x), "package")
+	     env = if(pkg == ".GlobalEnv") globalenv() else getNamespace(pkg)
 
                # Fetch the property accessor functions.
              GetProperty = get(ids[1], env, mode = "list")
@@ -140,7 +165,7 @@ setMethod("[[", c("CompiledCOMIDispatch", "character"),
                # See if there is an element in the property accessor
                # with that name.
                # XXX what about partial matching?
-	     idx = match(i, names(GetProperty)) 
+	     idx = match(i, names(GetProperty))
              if(!is.na(idx)) {
                  # If so, invoke it, but first add x as an argument
                  # by changing the formal arguments.
@@ -149,7 +174,7 @@ setMethod("[[", c("CompiledCOMIDispatch", "character"),
                 return(f(x))
              } else {
 
-                Methods = get(ids[2], mode = "list")             
+                Methods = get(ids[2], mode = "list")
                 idx = match(i, names(Methods))
 
 		if(!is.na(idx)) {
@@ -172,17 +197,18 @@ setMethod("[[", c("CompiledCOMIDispatch", "character"),
              }
 })
 
-# For a numeric value, we are assuming that 
+# For a numeric value, we are assuming that
 # we are dealing with a COM container/list so we call the Item()
 # method.
-if(FALSE) #XXX
- setMethod("[[", c("CompiledCOMIDispatch", "numeric"),
+#' @export
+#' @rdname RDCOMClient
+setMethod("[[", c("CompiledCOMIDispatch", "numeric"),
             function(x, i, j, ...) {
-              x$Item(i) 
+              x$Item(i)
             })
 
 
-setCompiledCOMProperty = 
+setCompiledCOMProperty =
           function(x, name, value) {
                # Find out what the names of the lists of functions for accessing
                # properties and methods are called.
@@ -191,14 +217,14 @@ setCompiledCOMProperty =
 	     k = class(x)
 	     ns <- NULL
 
-             pkg = attr(class(x), "package")	
+             pkg = attr(class(x), "package")
 	     env = if(pkg == ".GlobalEnv") globalenv() else getNamespace(pkg)
-	
+
                # Fetch the property accessor functions.
-             SetProperty = get(ids[1], env, mode = "list")	
+             SetProperty = get(ids[1], env, mode = "list")
 
                # If there is no property to set (i.e. a function in the SetProperty)
-               # then we have to be more careful. If this is part of an inline 
+               # then we have to be more careful. If this is part of an inline
                # assignment such as doc$Range$Text = "Some text"
                # then we want to allow the assignment of the intermediate value for
                # "Range" to go through without a warning.
@@ -208,7 +234,7 @@ setCompiledCOMProperty =
 
                     #XXX
                     # Here is a way to check if this is part of an inline assignment.
-                 inlineAssignment = (as.character(sys.call()[[1]]) %in% c("$<-", "[[<-") 
+                 inlineAssignment = (as.character(sys.call()[[1]]) %in% c("$<-", "[[<-")
                                         && as.character(sys.call()[[2]]) == "*tmp*")
                  if(!inlineAssignment || is.na(match(name, names(GetProperty)))) {
                    stop(class(x), " has no property (read or write) named ", name)
@@ -216,35 +242,49 @@ setCompiledCOMProperty =
              } else {
 	         SetProperty[[name]](x, value)
              }
-           
+
              x
           }
 
+
+#' @export
+#' @rdname RDCOMClient
 setMethod("$<-",  c("CompiledCOMIDispatch", "character"),  setCompiledCOMProperty)
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("[[<-", c("CompiledCOMIDispatch", "character"),
            function(x, i, j, ..., value) {
              setCompiledCOMProperty(x, i, value)
            })
-       
-setMethod("[", c("COMList", "numeric"),
+
+
+#' @export
+#' @rdname RDCOMClient
+setMethod("[", c(x = "COMList", i = "numeric", "missing"),
       function(x, i, j, ..., drop = TRUE) {
-	 if(all(i < 1)) 
+	 if(all(i < 1))
             i = (1:length(x))[ i]
 
          sapply(i, function(index) x[[index]])
       })
 
-setMethod("[", c("COMTypedNamedList", "numeric"),
+
+#' @export
+#' @rdname RDCOMClient
+setMethod("[", c(x = "COMTypedNamedList", i = "numeric", "missing"),
       function(x, i, j, ..., drop = TRUE) {
 	 ans = callNextMethod()
 	 if(all(i < 1))
             i = (1:length(x))[ i]
 	 names(ans) = names(x)[i]
 	 ans
-      })	
+      })
 
-setMethod("[", c("COMTypedNamedList", "character"),
+
+#' @export
+#' @rdname RDCOMClient
+setMethod("[", c(x = "COMTypedNamedList", i = "character", "missing"),
           function(x, i, j, ..., drop = TRUE) {
            ids = names(x)
            i = pmatch(i, ids)
@@ -253,18 +293,21 @@ setMethod("[", c("COMTypedNamedList", "character"),
   	   a
           })
 
+
+#' @export
+#' @rdname RDCOMClient
 setMethod("[[", c("COMTypedNamedList", "character"),
           function(x, i, j, ..., exact = NA) {
 	   w = match(i, names(x))
            if(!is.na(w))
              x[[w]]
            else {
-#XXX  
+#XXX
             do.call("$", list(x,i))
 #             callNextMethod()
            }
           })
-		
+
 COMPropertyAccessError =
 function(obj, name, class = "COMPropertyAccessError")
 {
@@ -276,13 +319,14 @@ function(obj, name, class = "COMPropertyAccessError")
   e
 }
 
+
 setClass("CompiledCOMAccessor", contains = "function")
 
 CompiledCOMAccessor =
 function(f)
 {
-  new("CompiledCOMAccessor", f)	 
-}			
+  new("CompiledCOMAccessor", f)
+}
 
 
 if(FALSE) {
@@ -294,7 +338,7 @@ setMethod("help", "CompiledCOMAccessor",
                    chmhelp = getOption("chmhelp"),
                    htmlhelp = getOption("htmlhelp"),
                    pager = getOption("pager")) {
- 
+
               cat("There is no help yet for these automated accessor functions\n", stderr())
           })
 }
@@ -302,6 +346,8 @@ setMethod("help", "CompiledCOMAccessor",
 
 #################################################################################################################################
 
+#' @export
+#' @rdname RDCOMClient
 setClass("EnumValue", representation("integer"),
            validity = function(object) {
 # Check the names here. Unfortunately, we don't have the class name.
@@ -313,17 +359,22 @@ setClass("EnumValue", representation("integer"),
                      }
 )
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("show", "EnumValue", function(object) {
                                  x = as.integer(object)
                                  names(x) = names(object)
                                  show(x)
                                })
-
+#' @export
+#' @rdname RDCOMClient
 setGeneric("EnumValue",
             function(id, value, obj = new("EnumValue")) {
                standardGeneric("EnumValue")
            })
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("EnumValue", c("character", "numeric", "EnumValue"),
 #
 # Constructor for EnumValue classes.
@@ -338,21 +389,29 @@ function(id, value, obj = new("EnumValue"))
 }
 )
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("EnumValue", c("character", "EnumValue"),
  function(id, value, obj = new("EnumValue")) {
    coerceToEnumValue(id, class(value))
   })
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("EnumValue", c("numeric", "EnumValue"),
  function(id, value, obj = new("EnumValue")) {
    coerceToEnumValue(id, class(value))
   })
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("EnumValue", c("character", "missing", obj = "EnumValue"),
  function(id, value, obj = new("EnumValue")) {
    coerceToEnumValue(id, class(obj))
   })
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("EnumValue", c("numeric", "missing", obj = "EnumValue"),
  function(id, value, obj = new("EnumValue")) {
    coerceToEnumValue(id, class(obj))
@@ -364,14 +423,14 @@ setMethod("EnumValue", c("numeric", "missing", obj = "EnumValue"),
 coerceToEnumValue =
 function(value, targetClass = as.character(sys.call(-2)[[3]]))
 {
-   # Get the definition for the enumeration values, i.e. the 
-   # named vector of values. 
+   # Get the definition for the enumeration values, i.e. the
+   # named vector of values.
 
    defName = paste(targetClass, "Enum", sep = "")
    if(exists(defName, mode = "numeric")) {
         def = get(defName, mode = "numeric")
 
-         # Now that we have the definition table, process the 
+         # Now that we have the definition table, process the
          # value we were given and get its entry in the table.
         if(is.character(value)) {
              # should we be kind and let partial matching work here with pmatch().
@@ -381,11 +440,11 @@ function(value, targetClass = as.character(sys.call(-2)[[3]]))
 
           # If there is no corresponding entry, signal an error.
         if(is.na(idx))
-          stop("No such value (", value, ") in enumeration for class ", 
-               targetClass, ". Values must from the set ", 
+          stop("No such value (", value, ") in enumeration for class ",
+               targetClass, ". Values must from the set ",
                paste(names(def), collapse = ", "))
-  
-          # Now create a new value with the value and name 
+
+          # Now create a new value with the value and name
           # and virgin instance of the target class.
         EnumValue(names(def)[idx], def[idx], new(targetClass))
    } else {
@@ -394,8 +453,8 @@ function(value, targetClass = as.character(sys.call(-2)[[3]]))
        # EnumValue object.  Perhaps we should just throw an error or
        # allow the EnumValue class tell us where it's information is located
        # like COMNamedTypedList.
-  
-      warning("No enumeration table (named ", defName, ") defined for class ", 
+
+      warning("No enumeration table (named ", defName, ") defined for class ",
                targetClass)
       new(targetClass, as.integer(value))
    }
@@ -418,34 +477,42 @@ setAs("character", 'EnumValue',
 # Used in generating R code to interface to Type Library definitions
 # and also at run-time for the generated code.
 
+#' @export
+#' @rdname RDCOMClient
 setGeneric("createTypeVarName",
             function(className, var, quote = TRUE)
               standardGeneric("createTypeVarName"))
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("createTypeVarName",
             "COMIDispatch",
 # Map the given names in var to a unique and legitimate
 # R variable name for the given class.
-# 
+#
 function(className, var, quote = TRUE)
 {
   createTypeVarName(class(className), var, quote)
 })
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("createTypeVarName",
             "CompiledCOMCoClass",
 # Map the given names in var to a unique and legitimate
 # R variable name for the given class.
-# 
+#
 function(className, var, quote = TRUE)
 {
   createTypeVarName(className@coclass, var, quote)
 })
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("createTypeVarName",
             "character",
 function(className, var, quote = TRUE) {
-  ans = paste("COM", className, var, sep = ".") 
+  ans = paste("COM", className, var, sep = ".")
   if(quote) {
     ans = paste("'", ans, "'", sep = "")
   }
@@ -456,17 +523,18 @@ function(className, var, quote = TRUE) {
 
 #################################################################################################################################
 
-
+#' @export
+#' @rdname RDCOMClient
 getCOMElements =
 #
 # XXX This should be merged with the names() method for a CompiledCOMIDispatch
-# object, specifically it should call this 
+# object, specifically it should call this
 
 function(type, env = NA, namesOnly = FALSE)
 {
  if(is(type, "CompiledCOMIDispatch"))
    type = class(type)
-	
+
  if(!isClass(type))
   stop(type, " is not the name of a class")
 
@@ -486,10 +554,10 @@ function(type, env = NA, namesOnly = FALSE)
                   NULL
          })
 
- if(namesOnly) 
+ if(namesOnly)
    ans = sapply(ans, function(x) sort(names(x)))
 
-	
+
  names(ans) = c("Readable Properties", "Writeable Properties", "Methods")
  ans
-}			
+}

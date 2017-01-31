@@ -1,14 +1,22 @@
+#' @export
+#' @rdname RDCOMClient
 setClass("COMList", representation("COMIDispatch"))
 
+#' @export
+#' @rdname RDCOMClient
 COMList =
 function(obj, class = "COMList")
 {
   new(class, ref = obj@ref)	
 }				
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("length", "COMList",
            function(x) .COM(x, "Count"))
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("[[", c("COMList", "numeric"),
             function(x, i, j, ...) {
                if(length(i) != 1)
@@ -17,7 +25,8 @@ setMethod("[[", c("COMList", "numeric"),
               .COM(x,"Item", as.integer(i)) 
             }) 
 
-
+#' @export
+#' @rdname RDCOMClient
 setMethod("[[<-", c("COMList", "numeric"),
             function(x, i, j, ..., value) {
                if(i < 0)
@@ -33,22 +42,25 @@ setMethod("[[<-", c("COMList", "numeric"),
 
             }) 
 
-
+#' @export
+#' @rdname RDCOMClient
 setMethod("length", "COMList", 
 	    function(x)  .COM(x, "Count"))
 
 
-if(FALSE) {
-if(!isGeneric("lapply"))
-  setGeneric("lapply", function(X, FUN, ...) standardGeneric("lapply"))
+#' @export
+#' @rdname RDCOMClient    
+setGeneric("lapply", function(X, FUN, ...) standardGeneric("lapply"))
 
-if(!isGeneric("sapply"))
-  setGeneric("sapply", 
+#' @export
+#' @rdname RDCOMClient
+setGeneric("sapply", 
 	      function(X, FUN, ..., simplify = TRUE, USE.NAMES = TRUE) 
 	         standardGeneric("sapply"))
-}
+
 	
-			
+#' @export
+#' @rdname RDCOMClient			
 setMethod("lapply", "COMList",
             function(X, FUN, ...) {
               lapply(1:length(X),
@@ -56,6 +68,8 @@ setMethod("lapply", "COMList",
                           FUN(X[[id]], ...))
             })
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("sapply", "COMList",
 function (X, FUN, ..., simplify = TRUE, USE.NAMES = TRUE) 
 {
@@ -77,16 +91,22 @@ function (X, FUN, ..., simplify = TRUE, USE.NAMES = TRUE)
     else answer
 })
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("lapply", "COMIDispatch",
          function (X, FUN, ...)  {
            lapply(new("COMList", X), FUN, ...)
   	 })	   
 	
+#' @export
+#' @rdname RDCOMClient
 setMethod("sapply", "COMIDispatch",
          function (X, FUN, ..., simplify = TRUE, USE.NAMES = TRUE)  {
            sapply(new("COMList", X), FUN, ..., simplify = simplify, USE.NAMES = TRUE)
   	 })	   
 
+#' @export
+#' @rdname RDCOMClient
 setClass("COMTypedList", contains = "COMList")
 
 # This method gets the name of the class for the returned value of
@@ -94,19 +114,29 @@ setClass("COMTypedList", contains = "COMList")
 # directly by COMTypedNamedList from COMTypedList but to behave
 # differently.
 
+#' @export
+#' @rdname RDCOMClient
 setGeneric("getItemClassName", 
              function(x)  standardGeneric("getItemClassName"))
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("getItemClassName", "COMTypedList", function(x) gsub("s$", "", class(x)))
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("[[", c("COMTypedList", "numeric"),
             function(x, i, j, ...) {
               val = callNextMethod()
               new(getItemClassName(x), val)
             })
 
+#' @export
+#' @rdname RDCOMClient
 setClass("COMTypedNamedList", representation(name = "character"), contains = "COMTypedList")
 
+#' @export
+#' @rdname RDCOMClient
 setClass("COMTypedParameterizedNamedList", representation(nameProperty = "character"), contains = "COMTypedNamedList")
 setValidity("COMTypedParameterizedNamedList",
              function(object) {
@@ -116,17 +146,24 @@ setValidity("COMTypedParameterizedNamedList",
                  TRUE
              })
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("names", "COMTypedParameterizedNamedList", 
            function(x) {
               sapply(x, function(el) el[[x@nameProperty]])
            })
 
+#' @export
+#' @rdname RDCOMClient
 setMethod("[[", c("COMTypedList", "character"),
             function(x, i, j, ...) {
               val = callNextMethod()
               new(getItemClassName(x), val)
             })	
 
+
+#' @export
+#' @rdname RDCOMClient
 setMethod("getItemClassName", "COMTypedNamedList", function(x) x@name)
 
  # This version ends up calling all sorts of methods and 
@@ -138,6 +175,8 @@ if(FALSE)  {
 }
 
 	# Alternative, "faster" way of doing this.
+#' @export
+#' @rdname RDCOMClient
 setMethod("names", c("COMTypedNamedList"),
             function(x) {
 	      n = x$Count
